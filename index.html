@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Chatbot with reCAPTCHA</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+</head>
+<body>
+    <h1>Chat with our bot</h1>
+    <div id="chat-container">
+        <div id="chat-log"></div>
+        <form id="chat-form" action="/submit" method="post">
+            <input type="text" name="message" id="message" placeholder="Type a message" required>
+            <div class="g-recaptcha" data-sitekey="{{ config.RECAPTCHA_SITE_KEY }}"></div>
+            <button type="submit">Send</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById("chat-form").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const message = document.getElementById("message").value;
+
+            if (!grecaptcha.getResponse()) {
+                alert("Please complete the reCAPTCHA");
+                return;
+            }
+
+            const response = await fetch("/submit", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams(new FormData(this))
+            });
+            const data = await response.json();
+            const chatLog = document.getElementById("chat-log");
+
+            if (data.error) {
+                chatLog.innerHTML += `<p class="error">${data.error}</p>`;
+            } else {
+                chatLog.innerHTML += `<p class="user-message">${message}</p>`;
+                chatLog.innerHTML += `<p class="bot-response">${data.response}</p>`;
+            }
+
+            document.getElementById("message").value = "";
+            grecaptcha.reset();
+        });
+    </script>
+</body>
+</html>
